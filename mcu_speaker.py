@@ -4,28 +4,37 @@ ureg = pint.UnitRegistry()
 time = ["Peak", "Temporary", "Continuous"]
 
 class Port:
-    def __init__(self):
-        
-class InputPort:
-    def __init__(self):
-        self.connect = False        # Boolean
-        self.connect_type = None    # String
-        self.type = None            # String
-        self.value = 0              # Number
-class OutputPort:
-    def __init__(self):
-        self.connect = False        # Boolean
-        self.connect_type = None    # String
-        self.type = None            # String
-        self.value = 0              # Number
+    def __init__(self, connect=False, connect_type=None, type=None, data=None):
+        self.connect = connect              # Boolean
+        self.connect_type = connect_type    # String
+        self.type = type                    # String
+        # feature: [name, direction, value] # String, String, Number
+        self.data = data
+
+class Port1:
+    self.vin = Input
+    self.vout = Output
+    self.impedense = Input
 
 class DAC:
     def __init__(self):
-        self. = InputPort() 
-        self. = OutputPort()
+        self.in_port = Port(type="analog", data=[["vin", "input", 0]])
+        self.out_port = Port(type="analog", data=[["vout", "output", 0], ["rin", "input", 0]])
         self.voltage # [input, output]
-        self.current # [self(cal)] 
+        self.current # [self(cal)]
         self.impedense # [input]
+
+要怎麼把輸入、本體、輸出連起來??????
+    @property
+    def voltage(self):
+        for in_item in self.in_port.data:
+            if in_item[0] == "vin":
+                for out_item in self.out_port.data:
+                    if out_item[0] == "vout":
+                        out_item[2] = in_item[2]
+                return in_item[2] 
+        return 0
+    
     
 
 ############ component library ############
@@ -35,8 +44,8 @@ class MSPM0G1507:
         self.vdd = InputPort()
         self.vss = InputPort()
         self.dac = DAC() # module
-    def voltage():
-        self.dac.voltage = self.vdd
+    def dac_module():
+        self.dac.input_port = self.vdd
 
 
 
@@ -99,6 +108,8 @@ def connect_up(Ba, Bb):
     Bb.input = Ba.output
 
 
+port 其實是
+constraint 蓋過去的時候 > 不包含賦值 > 那有甚麼意義
 
 
 
