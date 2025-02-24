@@ -11,10 +11,6 @@ class Port:
         # feature: [name, direction, value] # String, String, Number
         self.data = data
 
-class Port1:
-    self.vin = Input
-    self.vout = Output
-    self.impedense = Input
 
 class DAC:
     def __init__(self):
@@ -106,10 +102,6 @@ def connect_up(Ba, Bb):
     Bb.port.connect_type = Ba.type
     Ba.input = Bb.output
     Bb.input = Ba.output
-
-
-port 其實是
-constraint 蓋過去的時候 > 不包含賦值 > 那有甚麼意義
 
 
 
