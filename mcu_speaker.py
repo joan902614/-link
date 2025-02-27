@@ -1,7 +1,11 @@
 import pint
 ureg = pint.UnitRegistry()
 
+
+
 time = ["Peak", "Temporary", "Continuous"]
+
+
 
 class Port:
     def __init__(self, connect=False, connect_type=None, type=None, data=None):
@@ -11,7 +15,6 @@ class Port:
         # feature: [name, direction, value] # String, String, Number
         self.data = data
 
-
 class DAC:
     def __init__(self):
         self.in_port = Port(type="analog", data=[["vin", "input", 0]])
@@ -20,7 +23,7 @@ class DAC:
         self.current # [self(cal)]
         self.impedense # [input]
 
-要怎麼把輸入、本體、輸出連起來??????
+#要怎麼把輸入、本體、輸出連起來??????
     @property
     def voltage(self):
         for in_item in self.in_port.data:
@@ -70,7 +73,7 @@ context MSPM0G1507 inv DAC:
         -1 * ureg.milli * ampere <= self.dac.current <= 1 * ureg.milli * ureg.ampere
     )   
 
-
+ 
 # Dayton Audio CE32A-4
 self.impedense = 4 * ureg.ohm [output]
 
@@ -102,6 +105,95 @@ def connect_up(Ba, Bb):
     Bb.port.connect_type = Ba.type
     Ba.input = Bb.output
     Bb.input = Ba.output
+
+
+
+不管怎麼拿到 input 和 output 資料
+
+solver
+
+
+analog: 
+1. V = IR
+2. P = IV
+
+currentA.min <= A.current <= currentA.max [constraint]
+currentB.min <= B.current <= currentB.max [constraint]
+powerA.min <= A.power <= powerA.max [constraint]
+powerB.min <= B.power <= powerB.max [constraint]
+voltageB.min <= B.voltage <= voltageB.max [constraint]
+voltageA.min <= A.voltage <= voltageA.max [constraint]
+
+def getConstraint(object, tag: [string])
+    for tag in object.constraint
+    return [string...] 
+
+def solverAnalog():
+    1. 跟 analog 相關的 constraint 選起來 (透過 tag，實際值也放在 constraint，constraint 假設字串)
+    2. 加入補充的 constraint
+    3. 拿 input 和 output
+    4. solver
+
+
+Impedence 限制 
+
+def require(object, string):
+    = find(oject, [solver_type, "input", string])
+    return [] 
+def findProvide(object, list):
+    for item in list:
+        = find(oject, [solver_type, "input", string])
+    return [] 
+
+require(DAC, "analog") # return DAC.impedense, ["impedense"]
+findProvide(Speaker, ["impedense"])
+
+
+require(Speaker, "analog") # return Speaker.voltage, ["voltage"]
+findProvide(DAC, ["analog", "voltage"])
+
+
+DAC constraint:
+    self
+        DAC.voltage
+        1.62V <= DAC.voltage <= 3.6V 
+        -1mA <= DAC.current <= 1mA 
+    add
+        DAC.voltage = DAC.current * DAC.impedense
+        DAC.power = DAC.current * DAC.voltage
+
+Speaker: 
+    self
+        Speaker.impedense = 4 * OHM
+        Speaker.power <= 2W or (2W <= Speaker.power <= 4W and Speaker.time == Peak)
+    add
+        Speaker.voltage = Speaker.current * Speaker.impedense
+        Speaker.power = Speaker.current * Speaker.voltage
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
