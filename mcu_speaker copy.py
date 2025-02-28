@@ -126,14 +126,6 @@ constraints = [
 valid_solutions = []
 symbolic_constraints = []
 
-# 遍歷所有解，檢查不等式
-# for sol in solution_list:
-#     new_constraints = []
-#     for ineq in prev_constraints:
-#         prev_constraints = simplify(ineq.subs(solution))
-#     constraints = [ineq.subs(sol) for ineq in constraints]
-# print(constraints)
-
 def simplify_constraints(solution, constraints):
     """
     不斷將 constraints 代入 solution 並嘗試化簡，直到無法進一步簡化
@@ -142,19 +134,21 @@ def simplify_constraints(solution, constraints):
     iteration = 1
 
     while True:
-        print(f"\n🔄 簡化第 {iteration} 輪")
+        # print(f"\n🔄 簡化第 {iteration} 輪")
         new_constraints = []
 
         for ineq in prev_constraints:
             simplified_ineq = simplify(ineq.subs(solution))  # 代入 solution 並化簡
 
             if isinstance(simplified_ineq, sympy.logic.boolalg.BooleanTrue):
-                print(f"✅ {ineq} → 簡化為 True，移除")
+                # print(f"✅ {ineq} → 簡化為 True")
+                new_constraints.append(simplified_ineq)
             elif isinstance(simplified_ineq, sympy.logic.boolalg.BooleanFalse):
-                print(f"❌ {ineq} → 簡化為 False，不滿足")
-                return False  # 如果發現 False，代表這組解不符合
+                # print(f"❌ {ineq} → 簡化為 False")
+                new_constraints.append(simplified_ineq)
+                # return False  # 如果發現 False，代表這組解不符合
             else:
-                print(f"🔸 {ineq} → {simplified_ineq}（仍為符號）")
+                # print(f"🔸 {ineq} → {simplified_ineq}（仍為符號）")
                 new_constraints.append(simplified_ineq)
 
         # 如果新約束條件沒有變化，代表化簡完成，停止迴圈
@@ -167,10 +161,9 @@ def simplify_constraints(solution, constraints):
     return new_constraints  # 返回最簡的不等式組
 
 # 遍歷所有解，進行化簡
-print(f"\n🔹 測試 Solution: {solution}")
 simplified_constraints = simplify_constraints(solution, constraints)
-
-if simplified_constraints is False:
-    print("❌ 這組解不符合約束條件")
-else:
-    print("✅ 簡化後的約束條件：", simplified_constraints)
+print(f"\n🔹 測試 Solution: {solution}")
+print("簡化後的約束條件：")
+combined_constraints = list(zip(constraints, simplified_constraints))  # 將 constraints 和化簡結果合併
+for original, simplified in combined_constraints:
+    print(f"🔹 {original} → {simplified}")
