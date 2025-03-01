@@ -116,15 +116,12 @@ print("Solution: ", solution)
 
 constraints = [
     DAC_voltage <= 3.6,
-    DAC_voltage >= 1.62, 
+    DAC_voltage >= 1.62,
     DAC_current <= 1 * 1 / 1000, 
     DAC_current >= -1 * 1 / 1000,
     Speaker_power <= 2,
     Speaker_power >= 0, 
 ]
-
-valid_solutions = []
-symbolic_constraints = []
 
 def simplify_constraints(solution, constraints):
     """
