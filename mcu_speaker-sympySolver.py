@@ -107,7 +107,7 @@ eq5 = Eq(Speaker_power, Speaker_current * Speaker_voltage)
 # each other
 eq6 = Eq(DAC_impedense, Speaker_impedense)
 eq7 = Eq(Speaker_voltage, DAC_voltage)
-eq8 = Eq(DAC_voltage, 2)
+eq8 = Eq(DAC_voltage, 3.6)
 # 解方程組
 # solution = solve([eq1, eq2, eq3, eq4, eq5])
 solution = solve([eq1, eq2, eq3, eq4, eq5, eq6, eq7, eq8])
@@ -117,11 +117,14 @@ print("Solution: ", solution)
 constraints = [
     DAC_voltage <= 3.6,
     DAC_voltage >= 1.62,
-    DAC_current <= 1 * 1 / 1000, 
+    DAC_current <= 1 * 1 / 1000,
     DAC_current >= -1 * 1 / 1000,
     Speaker_power <= 2,
     Speaker_power >= 0, 
 ]
+
+# DAC - link - Speaker => DAC_current <= 0.001 → False
+# DAC {voltage, impedense}
 
 def simplify_constraints(solution, constraints):
     """
