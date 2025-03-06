@@ -17,3 +17,4 @@ def spi:
     setup_time + hold_time < 1/sck
 
 
+
