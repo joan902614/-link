@@ -191,6 +191,44 @@ DAC_voltage = Amp_voltage_in
 Amp_impedense_in = DAC_impedence
 Amp_voltage_out = Speaker_voltage
 
-EX:
-空接: 電流太大
-接AMP: 
+
+
+
+A:
+已知: Vaproc、Raout
+Vaout_in = Vaproc
+Vaout_outer = Vaout_in - Raout * I
+Vaout_outer = Vlin_outer
+
+L:
+純電阻
+    已知: Rl
+    I = Va / (Raout + Rl + Rbin)
+    接前面
+    Vlin_in = Vlin_outer - Rl * I
+    中間處理
+    f(V) = V -> Vlproc = f(Vlin_in) 
+    接後面
+    Vlout_in = Vlproc
+    Vlout_outer = Vlout_in - I * Rlout
+放大器
+    已知: Rlin、Rlout
+    I = Va / (Raout + Rlin + Rlout + Rbin)
+    接前面
+    Vlin_in = Vlin_outer - Rlin * I
+    中間處理
+    f(V) = G * V -> Vlproc = f(Vlin_in) 
+    接後面
+    Vlout_in = Vlproc
+    Vlout_outer = Vlout_in - I * Rlout
+
+
+B:
+已知: Rbin
+Vlout_outer = Vbin_outer
+
+
+
+
+
+
