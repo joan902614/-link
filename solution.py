@@ -170,7 +170,7 @@ print("\n最佳連接元件:", best_link.type, best_link.params, "評分成本:"
 Amp_impedence = 40 * 1000
 2.5 <= Amp_voltage <= 5.5
 0.5 <= Amp_voltage_in <= Amp_voltage - 0.8
-Amp_Gain = 40 * 1000 /(40 * 1000 + Amp_impedense_in)
+Amp_Gain = 40 * 1000 / (40 * 1000 + Amp_impedense_in)
 Amp_voltage_out = Amp_Gain * Amp_voltage_in
     Amp_voltage = Amp_current * Amp_impedense
     Amp_power = Amp_current * Amp_voltage 
