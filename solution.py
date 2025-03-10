@@ -201,16 +201,16 @@ Vaout_outer = Vaout_in - Raout * I
 Vaout_outer = Vlin_outer
 
 L:
-純電阻
+純電阻(空接)
     已知: Rl
     I = Va / (Raout + Rl + Rbin)
     接前面
-    Vlin_in = Vlin_outer - Rl * I
+    Vlin_in = Vlin_outer
     中間處理
-    f(V) = V -> Vlproc = f(Vlin_in) 
+    f(V) = V - Rl * I -> Vlproc = f(Vlin_in) 
     接後面
     Vlout_in = Vlproc
-    Vlout_outer = Vlout_in - I * Rlout
+    Vlout_outer = Vlout_in
 放大器
     已知: Rlin、Rlout
     I = Va / (Raout + Rlin + Rlout + Rbin)
