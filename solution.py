@@ -222,7 +222,6 @@ L:
     Vlout_in = Vlproc
     Vlout_outer = Vlout_in - I * Rlout
 
-
 B:
 已知: Rbin
 Vlout_outer = Vbin_outer
