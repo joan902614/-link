@@ -153,21 +153,25 @@ class Flow():
         1. 存入 source、destination
         2. port 的 value domain 數量要和 slot 對得起來
         3. port's assumption 和 slot's guarantee 取交集，反之
+        4. 交集完的送到 output slot
+        5. output slot 再送到 destination
         """
         self.comp_start = func_feature_start
         self.comp_end = func_feature_end                                  
         self.link_comp = []
-        # problem: slot 不會全部和 port 對
+        # problem: slot 不會全部和 port 對，可能其中一個有連起來就好?
         for candidate in LinkLibrary: 
             if (matchPortSlot(self.comp_start.in_ports, candidate.out_slots) 
                 and matchPortSlot(self.comp_end.out_ports, candidate.in_slots)):
                 self.link_comp.append(candidate)
-        for candidate in self.link_comp
+        for candidate in self.link_comp:
+            tmp = []
             if (intersectAssumptionGuarantee(self.comp_start.in_ports, candidate.out_slots) 
                 and intersectAssumptionGuarantee(self.comp_end.out_ports, candidate.in_slots)):
-                self.link_comp.append(candidate)
+                tmp.append(candidate)
+            self.link_comp = tmp
  
- 
+
 dac = DAC_core()
 speaker = Speaker_core()
 flow_dac_speaker = Flow(dac, speaker)
@@ -181,6 +185,7 @@ flow_dac_speaker = Flow(dac, speaker)
 3. port 的 value domain 數量要和 slot 對得起來
 4. port's assumption 和 slot's guarantee 取交集，反之
 
+必須要有個方式表示哪些是一定要連起來的 port 和 slot
 value domain 會有自己的套餐嗎，獨立於 functional feature?
-要怎麼知道 assumption, guarantee, provide, require?
+要怎麼知道 assumption, guarantee, provide, require?，應該會需要直接透過一個方式表明，像是 tag
 
