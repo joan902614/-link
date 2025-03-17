@@ -153,23 +153,6 @@ require(Speaker, "analog") # return Speaker.voltage, ["voltage"]
 findProvide(DAC, ["analog", "voltage"])
 
 
-DAC constraint:
-    self
-        DAC.voltage
-        1.62V <= DAC.voltage <= 3.6V 
-        -1mA <= DAC.current <= 1mA 
-    add
-        DAC.voltage = DAC.current * DAC.impedense
-        DAC.power = DAC.current * DAC.voltage
-
-Speaker: 
-    self
-        Speaker.impedense = 4 * OHM
-        Speaker.power <= 2W or (2W <= Speaker.power <= 4W and Speaker.time == Peak)
-    add
-        Speaker.voltage = Speaker.current * Speaker.impedense
-        Speaker.power = Speaker.current * Speaker.voltage
-
 
 
 
