@@ -219,7 +219,119 @@ B:
 已知: Rbin
 Vlout_outer = Vbin_outer
 
+# class LinkComponent
+#     REQUIRED_PARAMS = { 'number_of_ports': int }
+#     OPTIONAL_PARAMS = { 'number_of_input_slots': int, 'number_of_output_slots': int }
 
+# class Amp(FunctionalFeature):
+#     # schema
+#     REQUIRED_PARAMS = {}
+#     OPTIONAL_PARAMS = {}
+#     def __init__(self, **kwargs):
+#         super().__init__("Amp", [{"amp"}], number_of_ports=?, number_of_input_slots=2, number_of_output_slots=1)
+#         # self.v_dd, self.i_out, self.v_out, self.p_out = symbols("i_out v_out p_out")
+        
+#         self.inport1 = Analog(
+#             voltage_in = ParametricFeature(
+#                             name="voltage_supply", 
+#                             tags={"voltage", "input", "supply"},
+#                             symbol=self.v_dd, 
+#                             constraints=[Inequality(2.5, 5.5)],
+#                             dimension=Voltage,
+#                         ),
+#             current_in = ParametricFeature(
+#                             name=, 
+#                             tags={"current", "input"}, 
+#                             symbol=, 
+#                             constraints=[],
+#                             dimension=Current,
+#                         ),
+#             power_in = ParametricFeature(
+#                             name=,
+#                             tags={"power", "input"},
+#                             symbol=,
+#                             constraints=[],
+#                             dimension=Power,
+#                         ),
+#             impedance_in = ParametricFeature(
+#                             name=,
+#                             tags={"impedance", "input"},
+#                             symbol=,
+#                             constraints=[],
+#                             dimension=Resistance,
+#                         ),
+#         )(self.input_ports[0])
+
+#         self.inport2 = Analog(
+#             voltage_in = ParametricFeature(
+#                             name="voltage_input", 
+#                             tags={"voltage", "input"},
+#                             symbol=self.v_in, 
+#                             constraints=[Inequality(0.5, Equation(self.v_dd - 0.8))],
+#                             dimension=Voltage,
+#                         ),
+#             current_in = ParametricFeature(
+#                             name="current_in", 
+#                             tags={"current", "input"}, 
+#                             symbol=self.i_in, 
+#                             constraints=[],
+#                             dimension=Current,
+#                         ),
+#             power_in = ParametricFeature(
+#                             name="power_in",
+#                             tags={"power", "input"},
+#                             symbol=self.p_in,
+#                             constraints=[],
+#                             dimension=Power,
+#                         ),
+#             impedance_in = ParametricFeature(
+#                             name="impedance",
+#                             tags={"impedance", "input"},
+#                             symbol=self.z_in,
+#                             constraints=[],
+#                             dimension=Resistance,
+#                         ),
+#         )(self.input_ports[1])
+        
+#         self.outport = Analog(
+#             voltage_out = ParametricFeature(
+#                             name="voltage_output", 
+#                             tags={"voltage", "output"},
+#                             symbol=self.v, 
+#                             constraints=[Equation(self.v_out * (self.z / (self.z + self.z_in)))],
+#                             dimension=Voltage,
+#                         ),
+#             current_out = ParametricFeature(
+#                             name="current_out", 
+#                             tags={"current", "output"}, 
+#                             symbol=self.i_out, 
+#                             constraints=[],
+#                             dimension=Current,
+#                         ),
+#             power_out = ParametricFeature(
+#                             name="power_output",
+#                             tags={"power", "output"},
+#                             symbol=self.p_out,
+#                             constraints=[],
+#                             dimension=Power,
+#                         ),
+#             impedance_out = ParametricFeature(
+#                             name="impedance",
+#                             tags={"impedance", "output"},
+#                             symbol=self.z_out,
+#                             constraints=[],
+#                             dimension=Resistance,
+#                         ),
+#         )(self.output_ports[0])
+#         # self.Gain = None
+#         # self.control = None
+#         self.impedence = ParametricFeature(
+#                             name="impedance",
+#                             tags={"impedance"},
+#                             symbol=self.z,
+#                             constraints=[Constant(40 * 1000)],
+#                             dimension=Resistance,
+#                         )
 
 
 
