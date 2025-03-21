@@ -1,7 +1,5 @@
 # 一個元件只會有一個 functional feature，現在不會有 structural feature
 
-關係: flow
-
     
 class Slot(FeatureExpr):
     def __init__(self, name):
@@ -26,7 +24,7 @@ class Amp(FunctionalFeature):
     REQUIRED_PARAMS = {}
     OPTIONAL_PARAMS = {}
     def __init__(self, **kwargs):
-        super().__init__("DAC", [{"amp"}], number_of_ports=?, number_of_input_slots=2, number_of_output_slots=1)
+        super().__init__("Amp", [{"amp"}], number_of_ports=?, number_of_input_slots=2, number_of_output_slots=1)
         # self.v_dd, self.i_out, self.v_out, self.p_out = symbols("i_out v_out p_out")
         
         self.inport1 = Analog(
@@ -95,7 +93,7 @@ class Amp(FunctionalFeature):
             voltage_out = ParametricFeature(
                             name="voltage_output", 
                             tags={"voltage", "output"},
-                            symbol=self.v_out, 
+                            symbol=self.v, 
                             constraints=[Equation(self.v_out * (self.z / (self.z + self.z_in)))],
                             dimension=Voltage,
                         ),
@@ -145,11 +143,10 @@ def matchPortSlot(comp_ports, link_comp_slots) -> bool:
     '''
     # 必須要有個方式表示哪些是一定要連起來的 port 和 slot
     # problem: slot 不會全部和 port 對，可能其中一個有連起來就好? (或者透過 tag 來決定哪個是一定要連的)
-    # amp.input_ports[0] {"voltage", "input", "supply"} / amp.input_ports[1] {"voltage", "input"}
+    # amp.input_ports[0] {"voltage", "input", "supply"}、amp.input_ports[1] {"voltage", "input"}
     
 def propagateAssumptionGuarantee(comp_ports, link_comp_slots) -> valueDomain:
     '''
-    相同 tag 要進行交集，沒有的聯集
     intersect port's assumption and slot's guarantee, slot's assumption and port's guarantee 
     '''
     # Step 1: find domain
@@ -158,7 +155,7 @@ def propagateAssumptionGuarantee(comp_ports, link_comp_slots) -> valueDomain:
     # Step 3: solver and get intersect constraint
     # Step 4: return
 
-
+# >>
 class Flow():
     """
     value domain 會有自己的套餐嗎，獨立於 functional feature?
