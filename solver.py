@@ -137,31 +137,63 @@ def checkNoCandidate(candidates):
     else:
         pass
 
-def matchPortSlot(comp_ports, link_comp_slots) -> bool:
+def classifyPortValueDomain(comp1_ports, comp2_ports) -> dict:
     '''
-    match the ports' number and domain with slot
+    comp_ports, link_comp_slots: list of ports
+    Classify all value domain in comp1's port and comp2's port
+    return
+    {
+        value domain1:
+        {
+            left_comp: [...]
+            right_comp: [...]
+        }
+        ...
+    }
     '''
-    # 必須要有個方式表示哪些是一定要連起來的 port 和 slot
-    # problem: slot 不會全部和 port 對，可能其中一個有連起來就好? (或者透過 tag 來決定哪個是一定要連的)
-    # amp.input_ports[0] {"voltage", "input", "supply"}、amp.input_ports[1] {"voltage", "input"}
-    
-def propagateAssumptionGuarantee(comp_ports, link_comp_slots) -> valueDomain:
-    '''
-    intersect port's assumption and slot's guarantee, slot's assumption and port's guarantee 
-    '''
-    # Step 1: find domain
-    # Step 2: find assumption and guarntee
-        # 要怎麼知道 assumption, guarantee, provide, require?，應該會需要直接透過一個方式表明，像是 tag
-    # Step 3: solver and get intersect constraint
-    # Step 4: return
+    # step 1
+    value_domain_groups = {}
+    for p1 in comp1_ports:
+        p1_value_domain = p1.getValueDomain()
+        if p1_value_domain not in value_domain_groups:
+            value_domain_groups[p1_value_domain] = {'left_comp': [], 'right_comp': []}
+        value_domain_groups[p1_value_domain]['left_comp'].append(p1)
+    for p2 in comp2_ports:
+        p2_value_domain = p2.getValueDomain()
+        if p2_value_domain not in value_domain_groups:
+            value_domain_groups[p2_value_domain] = {'left_comp': [], 'right_comp': []}
+        value_domain_groups[p2_value_domain]['right_comp'].append(p2)
 
-# >>
+ValueDomainListAPMatcher = {
+    Digit: digitAPMatch,
+    Analog: analogAPMatch
+}
+def digitAPMatch():
+    
+def analogAPMatch(left_ports, right_ports):
+    '''
+    left_ports, right_ports: analog domain ports of left/right component 
+    1. 
+    '''
+
+
+
+def valueDomainAPMatch(value_domain_groups):
+    '''
+    each value call itself's Assumption Provide 
+    1. 
+    '''
+    for v in value_domain_groups.keys():
+        matcher = valueDomainList[v]
+        matcher(value_domain_groups[v])
+   
+
+# value domain 會有自己的套餐嗎，獨立於 functional feature?
 class Flow():
     """
-    value domain 會有自己的套餐嗎，獨立於 functional feature?
     1. 存入 source、destination
     2. port 的 value domain 數量要和 slot 對得起來
-    3. port's constraint 和 slot's constraint 取交集，輸入成 link comp 資訊?
+    3. port's constraint 和 slot's constraint 取交集，輸入成 link comp 資訊(maybe 也包含 config)?
     4. 送到 output slot
     5. output slot 再送到 destination
     """
@@ -192,9 +224,24 @@ class Flow():
             self.link_comp = tmp
         checkNoCandidate(self.link_comp)
         # step 4
+        # step 5
+        for candidate in self.link_comp:
+            tmp = []
+            if (propagateAssumptionGuarantee(self.comp_start.in_ports, candidate.out_slots)):
+                tmp.append(candidate)
+            self.link_comp = tmp
+        checkNoCandidate(self.link_comp)
  
 
 dac = DAC_core()
 speaker = Speaker_core()
 flow_dac_speaker = Flow(dac, speaker)
 
+# dac
+class Analog:
+
+
+dac_port = []
+# not mine
+comp.getPorts() -> list
+comp.port.getValueDomain() -> isinstance

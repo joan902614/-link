@@ -172,19 +172,12 @@ Amp_impedence = 40 * 1000
 0.5 <= Amp_voltage_in <= Amp_voltage - 0.8
 Amp_Gain = 40 * 1000 / (40 * 1000 + Amp_impedense_in)
 Amp_voltage_out = Amp_Gain * Amp_voltage_in
-    Amp_voltage = Amp_current * Amp_impedense
-    Amp_power = Amp_current * Amp_voltage 
 
-DAC_impedence = 0
-1.62 <= DAC_voltage <= 3.6
--1 * 1 / 1000 <= DAC_current <= 1 * 1 / 1000
-    DAC_voltage = DAC_current * DAC_impedense
-    DAC_power = DAC_current * DAC_voltage
+1.62 <= DAC_voltage <= 3.6 : G
+-1 * 1 / 1000 <= DAC_current <= 1 * 1 / 1000: A
 
-Speaker_impedense = 4
-0 <= Speaker_power <= 2
-    Speaker_voltage = Speaker_current * Speaker_impedense
-    Speaker_power = Speaker_current * Speaker_voltage
+Speaker_impedense = 4 : G
+0 <= Speaker_power <= 2 : A
 
 
 DAC_voltage = Amp_voltage_in
