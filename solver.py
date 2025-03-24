@@ -123,6 +123,10 @@ def configProvide(match_ports: list(list)):
 
     check if provide can be configured to change to guarantee 
     '''
+    for a in match_ports[0].getAssumptions:
+        a.constraint_set
+    for a in match_ports[1].getAssumptions:
+
     
 
 groups = classifyPortValueDomain(left_ports, right_ports)
@@ -181,5 +185,8 @@ comp.getPorts() -> list
 comp.port.getValueDomain() -> isinstance
 comp.port.getAssumptions() -> list
 comp.port.getProvides() -> list
+comp.port.getConstraintSet() -> ?
 
 comp.port.setConnectPort(list) 
+
+constraint 是有包含 公式 + constraint set 嗎? constraint set 是屬於 port 還是 constraint
