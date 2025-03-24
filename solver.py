@@ -79,6 +79,9 @@ def is_bidirectional_APmatch(value_domain, left_port: Port, right_port: Port) ->
     right_Ps = right_port.getProvides()
     solver = ValueDomainSolver[value_domain]
 
+    # check left and right assumptions is empty
+    if (not left_As) and (not right_As):
+        return False
     
     # check all left assumptions has provides in right 
     if not solver(left_As, right_Ps):
