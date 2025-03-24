@@ -69,8 +69,6 @@ ValueDomainSolver = {
     "Analog": analogSolver
 }
 
-
-
 def is_bidirectional_APmatch(value_domain, left_port: Port, right_port: Port) -> bool:
     '''
     check if left port Assumption has Provide and right port Assumption has Provide
@@ -81,6 +79,7 @@ def is_bidirectional_APmatch(value_domain, left_port: Port, right_port: Port) ->
     right_Ps = right_port.getProvides()
     solver = ValueDomainSolver[value_domain]
 
+    
     # check all left assumptions has provides in right 
     if not solver(left_As, right_Ps):
         return False
@@ -90,7 +89,7 @@ def is_bidirectional_APmatch(value_domain, left_port: Port, right_port: Port) ->
         return False
 
     return True
-def APMatch(value_domain, left_ports: list, right_ports: list):
+def portMatch(value_domain, left_ports: list, right_ports: list):
     '''
     left_ports, right_ports: value domain ports of left/right component 
     1. for each left port 
@@ -101,11 +100,11 @@ def APMatch(value_domain, left_ports: list, right_ports: list):
     matched = []
     used_left = set()
     used_right = set()
-    
+
+    # each ports do match
     for idx_l, p_l in enumerate(left_ports):
         if idx_l in used_left:
             continue
-        found = False
         for idx_r, p_r in enumerate(right_ports):
             if idx_r in used_right:
                 continue
@@ -113,18 +112,23 @@ def APMatch(value_domain, left_ports: list, right_ports: list):
                 matched.append([p_l, p_r])
                 used_left.add(idx_l)
                 used_right.add(idx_r)
-                found = True
                 break
-        if not found:
-            matched.append((p_l, None))  
-
+    
+    # if remain ports has assumption -> error 
+    for idx_l, p_l in enumerate(left_ports):
+        if (idx_l not in used_left) and (not p_l.getAssumptions()):
+            print("error")
+        elif (idx_l not in used_left):
+            matched.append([p_l, None])
     for idx_r, p_r in enumerate(right_ports):
-        if idx_r not in used_right:
-            matched.append((None, p_r))
-
+        if (idx_r not in used_right) and (not p_r.getAssumptions()):
+            print("error")
+        elif (idx_r not in used_right):
+            matched.append([None, p_r])
+    
     return matched
-
-def valueDomainAPMatch(value_domain_groups: dict):
+    
+def valueDomainPortMatch(value_domain_groups: dict):
     '''
     each value call itself's Assumption Provide 
     1. 
@@ -133,7 +137,7 @@ def valueDomainAPMatch(value_domain_groups: dict):
     #     APMatch(v, value_domain_groups[v][left_ports], value_domain_groups[v][right_ports])
     results = {}
     for v in value_domain_groups.keys():
-        matches = APMatch(v, value_domain_groups[v]['left_ports'], value_domain_groups[v]['right_ports'])
+        matches = portMatch(v, value_domain_groups[v]['left_ports'], value_domain_groups[v]['right_ports'])
         results[v] = matches
     return results
 
@@ -158,7 +162,7 @@ for domain, ports in groups.items():
     print(f"{domain}: Left = {ports['left_ports']}, Right = {ports['right_ports']}")
 
 # step 2
-match_results = valueDomainAPMatch(groups)
+match_results = valueDomainPortMatch(groups)
 print("\n各 Value Domain 的 AP Match 結果:")
 for domain, matches in match_results.items():
     print(f"Value Domain: {domain}")
