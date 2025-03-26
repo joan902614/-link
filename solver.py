@@ -44,29 +44,37 @@ ValueDomainSolver = {
 }
 
 # port match
-def isAPMatch(value_domain, left_port: Port, right_port: Port) -> bool:
+def isAPMatch(value_domain, left_port_parameter: list, right_port_parameter: list) -> bool:
     '''
     value_domain: one of special value domain class
-    left_port, right_port: Port instance of left/right port
+    left_port_parameter, right_port_parameter: left/right port's parameter
 
     check if left port Assumption has Provide and right port Assumption has Provide
     '''
-    left_As = left_port.getAssumptions()
-    left_Ps = left_port.getProvides()
-    right_As = right_port.getAssumptions()
-    right_Ps = right_port.getProvides()
-    solver = ValueDomainSolver[value_domain]
+    solver = ValueDomainSolver[value_domain] # maybe don't need? just all value domain use the same solver
+    left_all_provide, right_all_provide = True, True
 
-    # check left and right assumptions is empty
-    if (not left_As) and (not right_As):
-        return False
     # check all left assumptions has provides in right 
-    if not solver(left_As, right_Ps):
-        return False
+    for idx, p in enumerate(left_port_parameter):
+        if p.getType() == "Assumption":
+            if not solver(p, right_port_parameter[idx]):
+                return False
+            else:
+                left_all_provide = False
+
     # check all right assumptions has provides in left 
-    if not solver(right_As, left_Ps):
+    for idx, p in enumerate(right_port_parameter):
+        if p.getType() == "Assumption":
+            if not solver(p, left_port_parameter[idx]):
+                return False
+            else:
+                right_all_provide = False
+    
+    # check left and right assumptions is empty
+    if left_all_provide and right_all_provide:
         return False
-    return True
+    else:
+        return True
 
 def portMatch(value_domain, left_ports: list, right_ports: list) -> list(list):
     '''
@@ -85,7 +93,7 @@ def portMatch(value_domain, left_ports: list, right_ports: list) -> list(list):
         for idx_r, p_r in enumerate(right_ports):
             if idx_r in used_right:
                 continue
-            if isAPMatch(value_domain, p_l, p_r):
+            if isAPMatch(value_domain, p_l.getParameter(), p_r.getParameter()):
                 matched.append([p_l, p_r])
                 used_left.add(idx_l)
                 used_right.add(idx_r)
@@ -117,15 +125,23 @@ def valueDomainPortsMatch(value_domain_groups: dict) -> dict:
         results[v] = matches
     return results
 
-def configProvide(match_ports: list(list)):
+def getConstraintSet():
+    
+def configProvide(left_port, right_port):
     '''
     match_ports: AP match ports
 
     check if provide can be configured to change to guarantee 
     '''
-    for a in match_ports[0].getAssumptions:
-        a.constraint_set
-    for a in match_ports[1].getAssumptions:
+    left_port_parameter = left_port.getParameter()
+    right_port_parameter = right_port.getParameter()
+    
+    # left
+    for idx, p in left_port_parameter:
+        if p.getType() == "Assumption":
+            right_port_parameter[idx].getConstraintSet()
+
+    # right
 
     
 
@@ -183,10 +199,10 @@ match_results = valueDomainPortsMatch(groups)
 # not mine
 comp.getPorts() -> list
 comp.port.getValueDomain() -> isinstance
-comp.port.getAssumptions() -> list
-comp.port.getProvides() -> list
-comp.port.getConstraintSet() -> ?
+comp.port.getParameter() -> list
+comp.port.parameter.getType() -> str
+# comp.port.getAssumptions() -> list
+# comp.port.getProvides() -> list
+
 
 comp.port.setConnectPort(list) 
-
-constraint 是有包含 公式 + constraint set 嗎? constraint set 是屬於 port 還是 constraint
