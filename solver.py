@@ -44,7 +44,7 @@ ValueDomainSolver = {
 }
 
 # port match
-def isAPMatch(value_domain, left_port_parameter: list, right_port_parameter: list) -> bool:
+def isAPMatch(value_domain, left_port_parameter: dict, right_port_parameter: dict) -> bool:
     '''
     value_domain: one of special value domain class
     left_port_parameter, right_port_parameter: left/right port's parameter
@@ -199,7 +199,7 @@ match_results = valueDomainPortsMatch(groups)
 # not mine
 comp.getPorts() -> list
 comp.port.getValueDomain() -> isinstance
-comp.port.getParameter() -> list
+comp.port.getParameter() -> dict
 comp.port.parameter.getType() -> str
 # comp.port.getAssumptions() -> list
 # comp.port.getProvides() -> list
