@@ -27,12 +27,15 @@ class Parameter:
         var = symbols(self._name)
         return And(min <= var, var <= max)
 
+    def getType(self):
+        return self._type
+
 class Analog:
     def __init__(self,
-                 v={"name": "v", "max": float('inf'), "min": float('-inf'), "type": "Assumption"}, 
-                 i={"name": "i", "max": float('inf'), "min": float('-inf'), "type": "Assumption"}, 
-                 p={"name": "p", "max": float('inf'), "min": float('-inf'), "type": "Assumption"}, 
-                 r={"name": "r", "max": float('inf'), "min": float('-inf'), "type": "Assumption"}):
+                 v={"name": "v", "max": float('inf'), "min": float('-inf'), "type": "None"}, 
+                 i={"name": "i", "max": float('inf'), "min": float('-inf'), "type": "None"}, 
+                 p={"name": "p", "max": float('inf'), "min": float('-inf'), "type": "None"}, 
+                 r={"name": "r", "max": float('inf'), "min": float('-inf'), "type": "None"}):
         self._v = Parameter(v["name"], v["max"], v["min"], v["type"])
         self._i = Parameter(i["name"], i["max"], i["min"], i["type"])
         self._p = Parameter(p["name"], p["max"], p["min"], p["type"])
@@ -43,7 +46,7 @@ class Analog:
 
 # solver
 
-def classifyPortValueDomain(left_ports: dict, right_ports: dict) -> dict:
+def classifyPortValueDomain(left_ports: list, right_ports: list) -> dict:
     '''
     left_ports, right_ports: list of ports
     Classify all value domain in left's port and right's port
@@ -75,6 +78,28 @@ def classifyPortValueDomain(left_ports: dict, right_ports: dict) -> dict:
     
     return value_domain_groups
 
+def digitSolver(left_port_parameter: dict, right_port_parameter: dict) -> bool:
+    for k, v in left_port_parameter.items():
+        if v.getType() == "Assumption":
+            if right_port_parameter[k].getType() == "Assumption":
+                return False
+            elif right_port_parameter[k].getType() == "Provide":
+                
+            elif right_port_parameter[k].getType() == "None":
+        elif v.getType() == "Provide":
+            if right_port_parameter[k].getType() == "Assumption":
+                 
+            elif right_port_parameter[k].getType() == "Provide":
+                return False
+            elif right_port_parameter[k].getType() == "None":
+                
+        elif v.getType() == "None":
+            if right_port_parameter[k].getType() == "Assumption":
+                
+            elif right_port_parameter[k].getType() == "Provide":
+            
+            elif right_port_parameter[k].getType() == "None":
+
 def digitSolver(assumptions: list, provides: list) -> bool:
     # ex   
     return any(a in provides for a in assumptions)
@@ -86,9 +111,8 @@ ValueDomainSolver = {
     "Analog": analogSolver
 }
 
-
 # port match
-def isAPMatch(value_domain, left_port_parameter: list, right_port_parameter: list) -> bool:
+def isAPMatch(value_domain, left_port_parameter: dict, right_port_parameter: dict) -> bool:
     '''
     value_domain: one of special value domain class
     left_port_parameter, right_port_parameter: left/right port's parameter
@@ -99,17 +123,18 @@ def isAPMatch(value_domain, left_port_parameter: list, right_port_parameter: lis
     left_all_provide, right_all_provide = True, True
 
     # check all left assumptions has provides in right 
-    for idx, p in enumerate(left_port_parameter):
-        if p.getType() == "Assumption":
-            if not solver(p, right_port_parameter[idx]):
+    
+    for k, v in left_port_parameter.items():
+        if v.getType() == "Assumption":
+            if not solver(v, right_port_parameter[k]):
                 return False
             else:
                 left_all_provide = False
 
     # check all right assumptions has provides in left 
-    for idx, p in enumerate(right_port_parameter):
-        if p.getType() == "Assumption":
-            if not solver(p, left_port_parameter[idx]):
+    for k, v in right_port_parameter.items():
+        if v.getType() == "Assumption":
+            if not solver(v, left_port_parameter[k]):
                 return False
             else:
                 right_all_provide = False
