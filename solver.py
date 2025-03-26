@@ -1,6 +1,5 @@
 # examle
-# value in example is str
-# assumptions and provides in is str
+# value domain in example is str but actually class
 from sympy import symbols, Eq, Interval, solve, simplify, And
 
 class Port:
@@ -55,25 +54,30 @@ def classifyPortValueDomain(left_ports: list, right_ports: list) -> dict:
     Classify all value domain in left's port and right's port
     return
     {
-        value domain1:
+        "value domain1":
         {
-            left_ports: [...]
-            right_ports: [...]
+            "left_ports": [...]
+            "right_ports": [...]
         }
         ...
     }
     '''
     value_domain_groups = {}
+
+    # classify left port
     for p_l in left_ports:
         p_l_value_domain = p_l.getValueDomain()
         if p_l_value_domain not in value_domain_groups:
-            value_domain_groups[p_l_value_domain] = {'left_ports': [], 'right_ports': []}
-        value_domain_groups[p_l_value_domain]['left_ports'].append(p_l)
+            value_domain_groups[p_l_value_domain] = {"left_ports": [], "right_ports": []}
+        value_domain_groups[p_l_value_domain]["left_ports"].append(p_l)
+    
+    # classify right port
     for p_r in right_ports:
         p_r_value_domain = p_r.getValueDomain()
         if p_r_value_domain not in value_domain_groups:
-            value_domain_groups[p_r_value_domain] = {'left_ports': [], 'right_ports': []}
-        value_domain_groups[p_r_value_domain]['right_ports'].append(p_r)
+            value_domain_groups[p_r_value_domain] = {"left_ports": [], "right_ports": []}
+        value_domain_groups[p_r_value_domain]["right_ports"].append(p_r)
+    
     return value_domain_groups
 
 def digitSolver(assumptions: list, provides: list) -> bool:
@@ -121,9 +125,10 @@ def isAPMatch(value_domain, left_port_parameter: list, right_port_parameter: lis
     else:
         return True
     
-def APMatch(value_domain, left_ports: list, right_ports: list):
+def portMatch(value_domain, left_ports: list, right_ports: list):
     '''
     left_ports, right_ports: value domain ports of left/right component 
+    
     1. for each left port 
         if used -> pass
         if not used -> match each right port
@@ -155,14 +160,16 @@ def APMatch(value_domain, left_ports: list, right_ports: list):
 
     return matched
 
-def valueDomainAPMatch(value_domain_groups: dict):
+def valueDomainPortMatch(value_domain_groups: dict):
     '''
     each value call itself's Assumption Provide 
     '''
     results = {}
+
     for v in value_domain_groups.keys():
-        matches = APMatch(v, value_domain_groups[v]['left_ports'], value_domain_groups[v]['right_ports'])
+        matches = portMatch(v, value_domain_groups[v]['left_ports'], value_domain_groups[v]['right_ports'])
         results[v] = matches
+    
     return results
 
 # example use
@@ -186,7 +193,7 @@ for domain, ports in groups.items():
     print(f"{domain}: Left = {ports['left_ports']}, Right = {ports['right_ports']}")
 
 # step 2
-match_results = valueDomainAPMatch(groups)
+match_results = valueDomainPortMatch(groups)
 print("\n各 Value Domain 的 AP Match 結果:")
 for domain, matches in match_results.items():
     print(f"Value Domain: {domain}")
