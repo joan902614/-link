@@ -29,26 +29,21 @@ class Parameter:
 
 class Analog:
     def __init__(self,
-                 v={"name": "v", "max": float('inf'), "min": float('-inf'), "type": None}, 
-                 i={"name": "i", "max": float('inf'), "min": float('-inf'), "type": None}, 
-                 p={"name": "p", "max": float('inf'), "min": float('-inf'), "type": None}, 
-                 r={"name": "r", "max": float('inf'), "min": float('-inf'), "type": None}):
+                 v={"name": "v", "max": float('inf'), "min": float('-inf'), "type": "Assumption"}, 
+                 i={"name": "i", "max": float('inf'), "min": float('-inf'), "type": "Assumption"}, 
+                 p={"name": "p", "max": float('inf'), "min": float('-inf'), "type": "Assumption"}, 
+                 r={"name": "r", "max": float('inf'), "min": float('-inf'), "type": "Assumption"}):
         self._v = Parameter(v["name"], v["max"], v["min"], v["type"])
         self._i = Parameter(i["name"], i["max"], i["min"], i["type"])
         self._p = Parameter(p["name"], p["max"], p["min"], p["type"])
         self._r = Parameter(r["name"], r["max"], r["min"], r["type"])
     
     def getParameter(self):
-        return [self._v, self._i, self._p, self._r]
-
-L1 = Port("L1", "Analog", Analog({"name": "v", "max": 3, "min": 6, "type": "Provide"}))
-L2 = Port("L2", "Analog", Analog({"name": "v", "max": 3, "min": 6, "type": "Provide"}))
-
-R1 = Port("R1", "Analog", Analog({"name": "v", "max": 3, "min": 6, "type": "Provide"}))
+        return {"v": self._v, "i": self._i, "p": self._p, "r": self._r}
 
 # solver
 
-def classifyPortValueDomain(left_ports: list, right_ports: list) -> dict:
+def classifyPortValueDomain(left_ports: dict, right_ports: dict) -> dict:
     '''
     left_ports, right_ports: list of ports
     Classify all value domain in left's port and right's port
@@ -125,39 +120,41 @@ def isAPMatch(value_domain, left_port_parameter: list, right_port_parameter: lis
     else:
         return True
     
-def portMatch(value_domain, left_ports: list, right_ports: list):
+def portMatch(value_domain, left_ports: list, right_ports: list) -> list(list):
     '''
     left_ports, right_ports: value domain ports of left/right component 
-    
-    1. for each left port 
-        if used -> pass
-        if not used -> match each right port
-    2. if left/right can't match -> add in match with none
+
+    each port do Assumption Provide match to find matched port
     '''
     matched = []
     used_left = set()
     used_right = set()
-    
+
+    # each ports do match
     for idx_l, p_l in enumerate(left_ports):
         if idx_l in used_left:
             continue
-        found = False
         for idx_r, p_r in enumerate(right_ports):
             if idx_r in used_right:
                 continue
-            if isAPMatch(value_domain, p_l, p_r):
+            if isAPMatch(value_domain, p_l.getParameter(), p_r.getParameter()):
                 matched.append([p_l, p_r])
                 used_left.add(idx_l)
                 used_right.add(idx_r)
-                found = True
                 break
-        if not found:
-            matched.append((p_l, None))  
 
+    # if remain ports has assumption -> error 
+    for idx_l, p_l in enumerate(left_ports):
+        if (idx_l not in used_left) and (not p_l.getAssumptions()):
+            print("error")
+        elif (idx_l not in used_left):
+            matched.append([p_l, None])
     for idx_r, p_r in enumerate(right_ports):
-        if idx_r not in used_right:
-            matched.append((None, p_r))
-
+        if (idx_r not in used_right) and (not p_r.getAssumptions()):
+            print("error")
+        elif (idx_r not in used_right):
+            matched.append([None, p_r])
+    
     return matched
 
 def valueDomainPortMatch(value_domain_groups: dict):
@@ -173,18 +170,14 @@ def valueDomainPortMatch(value_domain_groups: dict):
     return results
 
 # example use
-left_ports = [
-    Port("L1", "Analog", [7], [1, 2]),
-    Port("L2", "Analog", [2], [2]),
-   
-    # Port("L3", "Digit", [0.5], [0.5, 1.0])
-]
-right_ports = [
-    Port("R1", "Analog", [1], [1, 3]),
-    Port("R2", "Analog", [2], [2, 4]),
+L1 = Port("L1", "Analog", Analog({"name": "v", "max": 3, "min": 6, "type": "Provide"}))
+L2 = Port("L2", "Analog", Analog({"name": "v", "max": 3, "min": 6, "type": "Provide"}))
+# L3 = Port("L3", "Digit", [0.5], [0.5, 1.0])
+left_ports = [L1, L2]
 
-    # Port("R3", "Digit", [0.5], [0.5])
-]
+R1 = Port("R1", "Analog", Analog({"name": "v", "max": 3, "min": 6, "type": "Provide"}))
+# R2 = Port("R3", "Digit", [0.5], [0.5])
+right_ports = [R1]
 
 # step 1
 groups = classifyPortValueDomain(left_ports, right_ports)
