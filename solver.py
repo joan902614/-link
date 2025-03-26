@@ -1,33 +1,51 @@
 # examle
 # value in example is str
 # assumptions and provides in is str
+from sympy import symbols, Eq, Interval, solve, simplify, And
+
 class Port:
-    def __init__(self, name, value_domain, assumptions=list(), provides=list()):
+    def __init__(self, name, value_domain, parameter):
         self.name = name
         self._value_domain = value_domain
-        self._assumptions = assumptions
-        self._provides = provides
+        self._parameter = parameter
 
     def getValueDomain(self):
         return self._value_domain
 
-    def getAssumptions(self):
-        return self._assumptions
-
-    def getProvides(self):
-        return self._provides
+    def getParameter(self):
+        return self._parameter
 
     def __repr__(self):
         return self.name
 
-# class NoLinkError(Exception):
-#     pass
-# def checkNoCandidate(candidates):
-#     if (not candidates):
-#         raise NoLinkError("No matching link")
-#     else:
-#         pass
+class Parameter:
+    def __init__(self, name, max, min, type):
+        self._name = name
+        self._type = type
+        self._constraint = self.setConstraint(max, min)
+    
+    def setConstraint(self, max, min):
+        var = symbols(self._name)
+        return And(min <= var, var <= max)
 
+class Analog:
+    def __init__(self,
+                 v={"name": "v", "max": float('inf'), "min": float('-inf'), "type": None}, 
+                 i={"name": "i", "max": float('inf'), "min": float('-inf'), "type": None}, 
+                 p={"name": "p", "max": float('inf'), "min": float('-inf'), "type": None}, 
+                 r={"name": "r", "max": float('inf'), "min": float('-inf'), "type": None}):
+        self._v = Parameter(v["name"], v["max"], v["min"], v["type"])
+        self._i = Parameter(i["name"], i["max"], i["min"], i["type"])
+        self._p = Parameter(p["name"], p["max"], p["min"], p["type"])
+        self._r = Parameter(r["name"], r["max"], r["min"], r["type"])
+    
+    def getParameter(self):
+        return [self._v, self._i, self._p, self._r]
+
+L1 = Port("L1", "Analog", Analog({"name": "v", "max": 3, "min": 6, "type": "Provide"}))
+L2 = Port("L2", "Analog", Analog({"name": "v", "max": 3, "min": 6, "type": "Provide"}))
+
+R1 = Port("R1", "Analog", Analog({"name": "v", "max": 3, "min": 6, "type": "Provide"}))
 
 # solver
 
@@ -70,26 +88,39 @@ ValueDomainSolver = {
 }
 
 
-
-def is_bidirectional_APmatch(value_domain, left_port: Port, right_port: Port) -> bool:
+# port match
+def isAPMatch(value_domain, left_port_parameter: list, right_port_parameter: list) -> bool:
     '''
+    value_domain: one of special value domain class
+    left_port_parameter, right_port_parameter: left/right port's parameter
+
     check if left port Assumption has Provide and right port Assumption has Provide
     '''
-    left_As = left_port.getAssumptions()
-    left_Ps = left_port.getProvides()
-    right_As = right_port.getAssumptions()
-    right_Ps = right_port.getProvides()
-    solver = ValueDomainSolver[value_domain]
+    solver = ValueDomainSolver[value_domain] # maybe don't need? just all value domain use the same solver
+    left_all_provide, right_all_provide = True, True
 
     # check all left assumptions has provides in right 
-    if not solver(left_As, right_Ps):
-        return False
+    for idx, p in enumerate(left_port_parameter):
+        if p.getType() == "Assumption":
+            if not solver(p, right_port_parameter[idx]):
+                return False
+            else:
+                left_all_provide = False
 
     # check all right assumptions has provides in left 
-    if not solver(right_As, left_Ps):
+    for idx, p in enumerate(right_port_parameter):
+        if p.getType() == "Assumption":
+            if not solver(p, left_port_parameter[idx]):
+                return False
+            else:
+                right_all_provide = False
+    
+    # check left and right assumptions is empty
+    if left_all_provide and right_all_provide:
         return False
-
-    return True
+    else:
+        return True
+    
 def APMatch(value_domain, left_ports: list, right_ports: list):
     '''
     left_ports, right_ports: value domain ports of left/right component 
@@ -109,7 +140,7 @@ def APMatch(value_domain, left_ports: list, right_ports: list):
         for idx_r, p_r in enumerate(right_ports):
             if idx_r in used_right:
                 continue
-            if is_bidirectional_APmatch(value_domain, p_l, p_r):
+            if isAPMatch(value_domain, p_l, p_r):
                 matched.append([p_l, p_r])
                 used_left.add(idx_l)
                 used_right.add(idx_r)
@@ -127,10 +158,7 @@ def APMatch(value_domain, left_ports: list, right_ports: list):
 def valueDomainAPMatch(value_domain_groups: dict):
     '''
     each value call itself's Assumption Provide 
-    1. 
     '''
-    # for v in value_domain_groups.keys():
-    #     APMatch(v, value_domain_groups[v][left_ports], value_domain_groups[v][right_ports])
     results = {}
     for v in value_domain_groups.keys():
         matches = APMatch(v, value_domain_groups[v]['left_ports'], value_domain_groups[v]['right_ports'])
@@ -142,13 +170,13 @@ left_ports = [
     Port("L1", "Analog", [7], [1, 2]),
     Port("L2", "Analog", [2], [2]),
    
-    Port("L3", "Digit", [0.5], [0.5, 1.0])
+    # Port("L3", "Digit", [0.5], [0.5, 1.0])
 ]
 right_ports = [
     Port("R1", "Analog", [1], [1, 3]),
     Port("R2", "Analog", [2], [2, 4]),
 
-    Port("R3", "Digit", [0.5], [0.5])
+    # Port("R3", "Digit", [0.5], [0.5])
 ]
 
 # step 1
@@ -166,54 +194,6 @@ for domain, matches in match_results.items():
         print("  ", pair)
         print("  ", pair[0], "A: ", pair[0].getAssumptions() if pair[0] is not None else "", "P: ", pair[0].getProvides() if pair[0] is not None else "")
         print("  ", pair[1], "A: ", pair[1].getAssumptions() if pair[1] is not None else "", "P: ", pair[1].getProvides() if pair[1] is not None else "")
-# class Flow():
-#     """
-#     1. 存入 source、destination
-#     2. port 的 value domain 數量要和 slot 對得起來
-#     3. port's constraint 和 slot's constraint 取交集，輸入成 link comp 資訊(maybe 也包含 config)?
-#     4. 送到 output slot
-#     5. output slot 再送到 destination
-#     """
-#     def __init__(self, func_feature_start, func_feature_end):
-#         """
-#         comp_start: source component
-#         comp_end: destination component
-#         link_comp: matching link components
-#         """
-#         # Step 1
-#         self.comp_start = func_feature_start
-#         self.comp_end = func_feature_end                                  
-#         self.link_comp = []
-#         self.findCandidateLink()
-    
-#     def findCandidateLink(self):
-#         # Step 2
-#         for candidate in LinkLibrary: 
-#             if (matchPortSlot(self.comp_start.in_ports, candidate.out_slots) 
-#                 and matchPortSlot(self.comp_end.out_ports, candidate.in_slots)):
-#                 self.link_comp.append(candidate)
-#         checkNoCandidate(self.link_comp)
-#         # Step 3
-#         for candidate in self.link_comp:
-#             tmp = []
-#             if (propagateAssumptionGuarantee(self.comp_start.in_ports, candidate.out_slots)):
-#                 tmp.append(candidate)
-#             self.link_comp = tmp
-#         checkNoCandidate(self.link_comp)
-#         # step 4
-#         # step 5
-#         for candidate in self.link_comp:
-#             tmp = []
-#             if (propagateAssumptionGuarantee(self.comp_start.in_ports, candidate.out_slots)):
-#                 tmp.append(candidate)
-#             self.link_comp = tmp
-#         checkNoCandidate(self.link_comp)
- 
-
-# dac = DAC_core()
-# speaker = Speaker_core()
-# flow_dac_speaker = Flow(dac, speaker)
-
 
 # not mine
 # comp.getPorts() -> list
