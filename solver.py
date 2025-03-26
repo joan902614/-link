@@ -21,14 +21,25 @@ class Parameter:
     def __init__(self, name, max, min, type):
         self._name = name
         self._type = type
-        self._constraint = self.setConstraint(max, min)
+        self._max = max
+        self._min = min
+        # self._constraint = self.setConstraint(max, min)
     
     def setConstraint(self, max, min):
         var = symbols(self._name)
         return And(min <= var, var <= max)
 
+    def getMax(self):
+        return self._max
+    
+    def getMin(self):
+        return self._min
+    
     def getType(self):
         return self._type
+    
+    def getConstraint(self):
+        return self._constraint
 
 class Analog:
     def __init__(self,
@@ -78,17 +89,25 @@ def classifyPortValueDomain(left_ports: list, right_ports: list) -> dict:
     
     return value_domain_groups
 
+def solve(assumption: Parameter, provide: Parameter) -> bool:
+    if provide.getMin() <= assumption.getMin() and assumption.getMax() <= provide.getMax():
+        return True
+    else:
+        return False
+    
 def digitSolver(left_port_parameter: dict, right_port_parameter: dict) -> bool:
+    constraint_set = {}
     for k, v in left_port_parameter.items():
         if v.getType() == "Assumption":
             if right_port_parameter[k].getType() == "Assumption":
                 return False
             elif right_port_parameter[k].getType() == "Provide":
-                
+                solve(v, right_port_parameter[k])
             elif right_port_parameter[k].getType() == "None":
+                
         elif v.getType() == "Provide":
             if right_port_parameter[k].getType() == "Assumption":
-                 
+                solve(right_port_parameter[k], v)
             elif right_port_parameter[k].getType() == "Provide":
                 return False
             elif right_port_parameter[k].getType() == "None":
@@ -148,7 +167,7 @@ def is_bidirectional_APmatch(value_domain, left_port: Port, right_port: Port) ->
         return False
 
     return True
-def APMatch(value_domain, left_ports: list, right_ports: list):
+def portMatch(value_domain, left_ports: list, right_ports: list):
     '''
     left_ports, right_ports: value domain ports of left/right component 
 
@@ -181,7 +200,7 @@ def APMatch(value_domain, left_ports: list, right_ports: list):
     
     return matched
 
-def valueDomainAPMatch(value_domain_groups: dict):
+def valueDomainPortMatch(value_domain_groups: dict):
     '''
     each value call itself's Assumption Provide 
     '''
