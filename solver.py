@@ -23,7 +23,7 @@ class Parameter:
         self._type = type
         self._max = max
         self._min = min
-        # self._constraint = self.setConstraint(max, min)
+        self._constraint = self.setConstraint(max, min)
     
     def setConstraint(self, max, min):
         var = symbols(self._name)
@@ -89,40 +89,50 @@ def classifyPortValueDomain(left_ports: list, right_ports: list) -> dict:
     
     return value_domain_groups
 
-def solve(assumption: Parameter, provide: Parameter) -> bool:
+def APsolver(assumption: Parameter, provide: Parameter) -> bool, :
     if provide.getMin() <= assumption.getMin() and assumption.getMax() <= provide.getMax():
-        return True
+        return True, assumption.getConstraint()
     else:
-        return False
-    
-def digitSolver(left_port_parameter: dict, right_port_parameter: dict) -> bool:
+        return False, None
+
+def solver():
+
+def analogSolver(left_port_parameter: dict, right_port_parameter: dict) -> bool:
     constraint_set = {}
+    
     for k, v in left_port_parameter.items():
         if v.getType() == "Assumption":
             if right_port_parameter[k].getType() == "Assumption":
                 return False
             elif right_port_parameter[k].getType() == "Provide":
-                solve(v, right_port_parameter[k])
+                res, constraint = APsolver(v, right_port_parameter[k])
+                if not res:
+                    return False
+                else:
+                    constraint_set[v] = constraint
             elif right_port_parameter[k].getType() == "None":
-                
+                constraint_set[v] = v.getConstraint()
         elif v.getType() == "Provide":
             if right_port_parameter[k].getType() == "Assumption":
-                solve(right_port_parameter[k], v)
+                res, constraint = APsolver(right_port_parameter[k], v)
+                if not res:
+                    return False
+                else:
+                    constraint_set[v] = constraint
             elif right_port_parameter[k].getType() == "Provide":
                 return False
             elif right_port_parameter[k].getType() == "None":
-                
+                constraint_set[v] = v.getConstraint()
         elif v.getType() == "None":
             if right_port_parameter[k].getType() == "Assumption":
-                
+                constraint_set[v] = right_port_parameter[k].getConstraint()
             elif right_port_parameter[k].getType() == "Provide":
-            
+                constraint_set[v] = right_port_parameter[k].getConstraint()
             elif right_port_parameter[k].getType() == "None":
+                pass
+    
 
 def digitSolver(assumptions: list, provides: list) -> bool:
-    # ex   
-    return any(a in provides for a in assumptions)
-def analogSolver(assumptions: list, provides: list) -> bool:
     # ex
     return any(a in provides for a in assumptions)
 ValueDomainSolver = {
@@ -131,43 +141,40 @@ ValueDomainSolver = {
 }
 
 
-
-def is_bidirectional_APmatch(value_domain, left_port: Port, right_port: Port) -> bool:
+def isAPMatch(value_domain, left_port_parameter: dict, right_port_parameter: dict) -> bool:
     '''
     value_domain: one of special value domain class
     left_port_parameter, right_port_parameter: left/right port's parameter
 
     check if left port Assumption has Provide and right port Assumption has Provide
     '''
-    left_As = left_port.getAssumptions()
-    left_Ps = left_port.getProvides()
-    right_As = right_port.getAssumptions()
-    right_Ps = right_port.getProvides()
     solver = ValueDomainSolver[value_domain]
+    # left_all_provide, right_all_provide = True, True
+    return solver(left_port_parameter, right_port_parameter)
 
-    # check all left assumptions has provides in right 
+    # # check all left assumptions has provides in right 
+    # for idx, p in enumerate(left_port_parameter):
+    #     if p.getType() == "Assumption":
+    #         if not solver(p, right_port_parameter[idx]):
+    #             return False
+    #         else:
+    #             left_all_provide = False
+
+    # # check all right assumptions has provides in left 
+    # for idx, p in enumerate(right_port_parameter):
+    #     if p.getType() == "Assumption":
+    #         if not solver(p, left_port_parameter[idx]):
+    #             return False
+    #         else:
+    #             right_all_provide = False
     
-    for k, v in left_port_parameter.items():
-        if v.getType() == "Assumption":
-            if not solver(v, right_port_parameter[k]):
-                return False
-            else:
-                left_all_provide = False
+    # # check left and right assumptions is empty
+    # if left_all_provide and right_all_provide:
+    #     return False
+    # else:
+    #     return True
 
-    # check all right assumptions has provides in left 
-    for k, v in right_port_parameter.items():
-        if v.getType() == "Assumption":
-            if not solver(v, left_port_parameter[k]):
-                return False
-            else:
-                right_all_provide = False
-    
-    # check left and right assumptions is empty
-    if left_all_provide and right_all_provide:
-        return False
-
-    return True
-def portMatch(value_domain, left_ports: list, right_ports: list):
+def portMatch(value_domain, left_ports: list, right_ports: list) -> list(list):
     '''
     left_ports, right_ports: value domain ports of left/right component 
 
@@ -176,7 +183,7 @@ def portMatch(value_domain, left_ports: list, right_ports: list):
     matched = []
     used_left = set()
     used_right = set()
-
+    
     # each ports do match
     for idx_l, p_l in enumerate(left_ports):
         if idx_l in used_left:
@@ -189,9 +196,13 @@ def portMatch(value_domain, left_ports: list, right_ports: list):
                 used_left.add(idx_l)
                 used_right.add(idx_r)
                 break
-        if not found:
-            matched.append((p_l, None))  
-
+    
+    # if remain ports has assumption -> error 
+    for idx_l, p_l in enumerate(left_ports):
+        if (idx_l not in used_left) and (not p_l.getAssumptions()):
+            print("error")
+        elif (idx_l not in used_left):
+            matched.append([p_l, None])
     for idx_r, p_r in enumerate(right_ports):
         if (idx_r not in used_right) and (not p_r.getAssumptions()):
             print("error")
@@ -207,7 +218,7 @@ def valueDomainPortMatch(value_domain_groups: dict):
     results = {}
 
     for v in value_domain_groups.keys():
-        matches = portMatch(v, value_domain_groups[v]['left_ports'], value_domain_groups[v]['right_ports'])
+        matches = portMatch(v, value_domain_groups[v]["left_ports"], value_domain_groups[v]["right_ports"])
         results[v] = matches
     
     return results
