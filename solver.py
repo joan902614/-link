@@ -1,6 +1,6 @@
 # examle
 # value domain in example is str but actually class
-from sympy import symbols, Eq, Interval, solve, simplify, And
+import sympy as sp
 
 class Port:
     def __init__(self, name, value_domain, parameter):
@@ -12,28 +12,28 @@ class Port:
         return self._value_domain
 
     def getParameter(self):
-        return self._parameter
+        return self._parameter.getParameter()
 
     def __repr__(self):
         return self.name
 
 class Parameter:
-    def __init__(self, name, max, min, type):
+    def __init__(self, name, min, max, type):
         self._name = name
         self._type = type
-        self._max = max
         self._min = min
-        self._constraint = self.setConstraint(max, min)
+        self._max = max
+        self._constraint = self.setConstraint(min, max)
     
-    def setConstraint(self, max, min):
-        var = symbols(self._name)
-        return And(min <= var, var <= max)
-
-    def getMax(self):
-        return self._max
+    def setConstraint(self, min, max):
+        var = sp.symbols(self._name)
+        return sp.And(min <= var, var <= max)
     
     def getMin(self):
         return self._min
+
+    def getMax(self):
+        return self._max
     
     def getType(self):
         return self._type
@@ -43,21 +43,21 @@ class Parameter:
 
 class Analog:
     def __init__(self,
-                 v={"name": "v", "max": float('inf'), "min": float('-inf'), "type": "None"}, 
-                 i={"name": "i", "max": float('inf'), "min": float('-inf'), "type": "None"}, 
-                 p={"name": "p", "max": float('inf'), "min": float('-inf'), "type": "None"}, 
-                 r={"name": "r", "max": float('inf'), "min": float('-inf'), "type": "None"}):
-        self._v = Parameter(v["name"], v["max"], v["min"], v["type"])
-        self._i = Parameter(i["name"], i["max"], i["min"], i["type"])
-        self._p = Parameter(p["name"], p["max"], p["min"], p["type"])
-        self._r = Parameter(r["name"], r["max"], r["min"], r["type"])
+                 v={"name": "v", "min": float('-inf'), "max": float('inf'), "type": "None"}, 
+                 i={"name": "i", "min": float('-inf'), "max": float('inf'), "type": "None"}, 
+                 p={"name": "p", "min": float('-inf'), "max": float('inf'), "type": "None"}, 
+                 r={"name": "r", "min": float('-inf'), "max": float('inf'), "type": "None"}):
+        self._v = Parameter(v["name"], v["min"], v["max"], v["type"])
+        self._i = Parameter(i["name"], i["min"], i["max"], i["type"])
+        self._p = Parameter(p["name"], p["min"], p["max"], p["type"])
+        self._r = Parameter(r["name"], r["min"], r["max"], r["type"])
     
     def getParameter(self):
         return {"v": self._v, "i": self._i, "p": self._p, "r": self._r}
 
 # solver
 
-def classifyPortValueDomain(left_ports: list, right_ports: list) -> dict:
+def classifyPortValueDomain(left_ports: list, right_ports: list):
     '''
     left_ports, right_ports: list of ports
     Classify all value domain in left's port and right's port
@@ -89,16 +89,29 @@ def classifyPortValueDomain(left_ports: list, right_ports: list) -> dict:
     
     return value_domain_groups
 
-def APsolver(assumption: Parameter, provide: Parameter) -> bool, :
+def APsolver(assumption: Parameter, provide: Parameter):
+    '''
+    assumption, provide: Parameter object
+
+    assumption check and replace provide 
+
+    return bool, constraint(sp.And)
+    '''
     if provide.getMin() <= assumption.getMin() and assumption.getMax() <= provide.getMax():
         return True, assumption.getConstraint()
     else:
         return False, None
 
-def solver():
+def analogSolver(left_port_parameter: dict, right_port_parameter: dict):
+    '''
+    left_port_parameter, right_port_parameter: dict parameter of left/right port
 
-def analogSolver(left_port_parameter: dict, right_port_parameter: dict) -> bool:
+    check if left/right port Assumption has Provide, None can be defined
+    
+    return
+    '''
     constraint_set = {}
+    constraints = []
     
     for k, v in left_port_parameter.items():
         if v.getType() == "Assumption":
@@ -110,8 +123,10 @@ def analogSolver(left_port_parameter: dict, right_port_parameter: dict) -> bool:
                     return False
                 else:
                     constraint_set[v] = constraint
+                    constraints.append(constraint)
             elif right_port_parameter[k].getType() == "None":
                 constraint_set[v] = v.getConstraint()
+                constraints.append(v.getConstraint())
         elif v.getType() == "Provide":
             if right_port_parameter[k].getType() == "Assumption":
                 res, constraint = APsolver(right_port_parameter[k], v)
@@ -119,17 +134,49 @@ def analogSolver(left_port_parameter: dict, right_port_parameter: dict) -> bool:
                     return False
                 else:
                     constraint_set[v] = constraint
+                    constraints.append(constraint)
             elif right_port_parameter[k].getType() == "Provide":
                 return False
             elif right_port_parameter[k].getType() == "None":
                 constraint_set[v] = v.getConstraint()
+                constraints.append(v.getConstraint())
         elif v.getType() == "None":
             if right_port_parameter[k].getType() == "Assumption":
                 constraint_set[v] = right_port_parameter[k].getConstraint()
+                constraints.append(right_port_parameter[k].getConstraint())
             elif right_port_parameter[k].getType() == "Provide":
                 constraint_set[v] = right_port_parameter[k].getConstraint()
+                constraints.append(right_port_parameter[k].getConstraint())
             elif right_port_parameter[k].getType() == "None":
                 pass
+    
+    v, i, r, p = sp.symbols("v i r p")
+    vars = [v, i, r, p]
+    eqs = [sp.Eq(v, i * r), sp.Eq(p, i * v)]
+
+    # solutions_eq = sp.solve(eqs, vars, dict=True)
+    # subs_map = solutions_eq[0]
+    # print(subs_map)
+    # substituted_ineqs = []
+    # for ineq in constraints:
+    #     substituted_ineqs.append(ineq.subs(subs_map))
+    # solution_range = sp.reduce_inequalities(substituted_ineqs)
+
+    all_results = []
+
+    for var in vars:
+        sols = sp.solve(eqs, var, dict=True)
+        # print(sols)
+
+        for sol in sols:
+            substituted_ineqs = [ineq.subs(sol) for ineq in constraints]
+            print(substituted_ineqs)
+
+            solution_range = sp.reduce_inequalities(substituted_ineqs)
+            all_results.append(solution_range)
+
+    # print(all_results)
+    return all_results
     
 
 def digitSolver(assumptions: list, provides: list) -> bool:
@@ -140,50 +187,20 @@ ValueDomainSolver = {
     "Analog": analogSolver
 }
 
-
-def isAPMatch(value_domain, left_port_parameter: dict, right_port_parameter: dict) -> bool:
+def portMatch(value_domain, left_ports: list, right_ports: list):
     '''
-    value_domain: one of special value domain class
-    left_port_parameter, right_port_parameter: left/right port's parameter
-
-    check if left port Assumption has Provide and right port Assumption has Provide
-    '''
-    solver = ValueDomainSolver[value_domain]
-    # left_all_provide, right_all_provide = True, True
-    return solver(left_port_parameter, right_port_parameter)
-
-    # # check all left assumptions has provides in right 
-    # for idx, p in enumerate(left_port_parameter):
-    #     if p.getType() == "Assumption":
-    #         if not solver(p, right_port_parameter[idx]):
-    #             return False
-    #         else:
-    #             left_all_provide = False
-
-    # # check all right assumptions has provides in left 
-    # for idx, p in enumerate(right_port_parameter):
-    #     if p.getType() == "Assumption":
-    #         if not solver(p, left_port_parameter[idx]):
-    #             return False
-    #         else:
-    #             right_all_provide = False
-    
-    # # check left and right assumptions is empty
-    # if left_all_provide and right_all_provide:
-    #     return False
-    # else:
-    #     return True
-
-def portMatch(value_domain, left_ports: list, right_ports: list) -> list(list):
-    '''
+    value_domain: value domain class
     left_ports, right_ports: value domain ports of left/right component 
 
-    each port do Assumption Provide match to find matched port
+    each port do Parameter match to find matched port
+
+    return: [[L, R]]
     '''
     matched = []
     used_left = set()
     used_right = set()
-    
+    solver = ValueDomainSolver[value_domain]
+
     # each ports do match
     for idx_l, p_l in enumerate(left_ports):
         if idx_l in used_left:
@@ -191,7 +208,7 @@ def portMatch(value_domain, left_ports: list, right_ports: list) -> list(list):
         for idx_r, p_r in enumerate(right_ports):
             if idx_r in used_right:
                 continue
-            if isAPMatch(value_domain, p_l.getParameter(), p_r.getParameter()):
+            if solver(p_l.getParameter(), p_r.getParameter()):
                 matched.append([p_l, p_r])
                 used_left.add(idx_l)
                 used_right.add(idx_r)
@@ -199,21 +216,35 @@ def portMatch(value_domain, left_ports: list, right_ports: list) -> list(list):
     
     # if remain ports has assumption -> error 
     for idx_l, p_l in enumerate(left_ports):
-        if (idx_l not in used_left) and (not p_l.getAssumptions()):
-            print("error")
-        elif (idx_l not in used_left):
+        # if (idx_l not in used_left) and (not p_l.getAssumptions()):
+        #     print("error")
+        # elif (idx_l not in used_left):
+        #     matched.append([p_l, None])
+        if (idx_l not in used_left):
             matched.append([p_l, None])
     for idx_r, p_r in enumerate(right_ports):
-        if (idx_r not in used_right) and (not p_r.getAssumptions()):
-            print("error")
-        elif (idx_r not in used_right):
+        # if (idx_r not in used_right) and (not p_r.getAssumptions()):
+        #     print("error")
+        # elif (idx_r not in used_right):
+        #     matched.append([None, p_r])
+        if (idx_r not in used_right):
             matched.append([None, p_r])
     
     return matched
 
 def valueDomainPortMatch(value_domain_groups: dict):
     '''
-    each value call itself's Assumption Provide 
+    value_domain_groups: classified value domain ports
+
+    each value domain call port match
+    
+    return: 
+    {
+        "value domain1":
+            [L, R]
+            ...
+        ...
+    }
     '''
     results = {}
 
@@ -224,12 +255,12 @@ def valueDomainPortMatch(value_domain_groups: dict):
     return results
 
 # example use
-L1 = Port("L1", "Analog", Analog({"name": "v", "max": 3, "min": 6, "type": "Provide"}))
-L2 = Port("L2", "Analog", Analog({"name": "v", "max": 3, "min": 6, "type": "Provide"}))
+L1 = Port("L1", "Analog", Analog({"name": "v", "min": 3, "max": 6, "type": "Provide"}))
+L2 = Port("L2", "Analog", Analog(v={"name": "v", "min": 2, "max": 3, "type": "Assumption"}, r={"name": "r", "min": 50, "max": 50, "type": "Provide"}))
 # L3 = Port("L3", "Digit", [0.5], [0.5, 1.0])
 left_ports = [L1, L2]
 
-R1 = Port("R1", "Analog", Analog({"name": "v", "max": 3, "min": 6, "type": "Provide"}))
+R1 = Port("R1", "Analog", Analog({"name": "v", "min": 1, "max": 6, "type": "Provide"}))
 # R2 = Port("R3", "Digit", [0.5], [0.5])
 right_ports = [R1]
 
@@ -246,8 +277,8 @@ for domain, matches in match_results.items():
     print(f"Value Domain: {domain}")
     for pair in matches:
         print("  ", pair)
-        print("  ", pair[0], "A: ", pair[0].getAssumptions() if pair[0] is not None else "", "P: ", pair[0].getProvides() if pair[0] is not None else "")
-        print("  ", pair[1], "A: ", pair[1].getAssumptions() if pair[1] is not None else "", "P: ", pair[1].getProvides() if pair[1] is not None else "")
+        # print("  ", pair[1], "Parameter: ", pair[1].getParameter() if pair[1] is not None else "")
+        # print("  ", pair[0], "Parameter: ", pair[0].getParameter() if pair[0] is not None else "")
 
 # not mine
 # comp.getPorts() -> list
