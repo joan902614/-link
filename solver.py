@@ -116,11 +116,11 @@ def analogSolver(left_port_parameter: dict, right_port_parameter: dict):
     for k, v in left_port_parameter.items():
         if v.getType() == "Assumption":
             if right_port_parameter[k].getType() == "Assumption":
-                return False
+                return False, None
             elif right_port_parameter[k].getType() == "Provide":
                 res, constraint = APsolver(v, right_port_parameter[k])
                 if not res:
-                    return False
+                    return False, None
                 else:
                     constraint_set[v] = constraint
                     constraints.append(constraint)
@@ -131,12 +131,12 @@ def analogSolver(left_port_parameter: dict, right_port_parameter: dict):
             if right_port_parameter[k].getType() == "Assumption":
                 res, constraint = APsolver(right_port_parameter[k], v)
                 if not res:
-                    return False
+                    return False, None
                 else:
                     constraint_set[v] = constraint
                     constraints.append(constraint)
             elif right_port_parameter[k].getType() == "Provide":
-                return False
+                return False, None
             elif right_port_parameter[k].getType() == "None":
                 constraint_set[v] = v.getConstraint()
                 constraints.append(v.getConstraint())
@@ -153,33 +153,38 @@ def analogSolver(left_port_parameter: dict, right_port_parameter: dict):
     v, i, r, p = sp.symbols("v i r p")
     vars = [v, i, r, p]
     eqs = [sp.Eq(v, i * r), sp.Eq(p, i * v)]
+    
+    sol_eqs = sp.solve(eqs, vars, dict=True)[0]
+    
+    res = []
+    for ineq in constraints:
+        simplified_ineq = sp.simplify(ineq.subs(sol_eqs)) 
+        print(simplified_ineq)
+        res.append(simplified_ineq)
+    # prev_constraints = constraints.copy()
+    # new_constraints = []
+    # while True:
+    #     for ineq in prev_constraints:
+    #         simplified_ineq = sp.simplify(ineq.subs(sol_eqs)) 
+    #         new_constraints.append(simplified_ineq)
 
-    # solutions_eq = sp.solve(eqs, vars, dict=True)
-    # subs_map = solutions_eq[0]
-    # print(subs_map)
-    # substituted_ineqs = []
-    # for ineq in constraints:
-    #     substituted_ineqs.append(ineq.subs(subs_map))
-    # solution_range = sp.reduce_inequalities(substituted_ineqs)
+    #     if new_constraints == prev_constraints:
+    #         break
+    #     else:
+    #         prev_constraints.clear()
+    #         prev_constraints = new_constraints.copy()  
+    #         new_constraints.clear()
+            
+    print(res)
+    if not res:
+        return False, res
+    else:
+        return True, res
 
-    all_results = []
-
-    for var in vars:
-        sols = sp.solve(eqs, var, dict=True)
-        # print(sols)
-
-        for sol in sols:
-            substituted_ineqs = [ineq.subs(sol) for ineq in constraints]
-            print(substituted_ineqs)
-
-            solution_range = sp.reduce_inequalities(substituted_ineqs)
-            all_results.append(solution_range)
-
-    # print(all_results)
-    return all_results
+    
     
 
-def digitSolver(assumptions: list, provides: list) -> bool:
+def digitSolver(assumptions: list, provides: list):
     # ex
     return any(a in provides for a in assumptions)
 ValueDomainSolver = {
@@ -208,7 +213,10 @@ def portMatch(value_domain, left_ports: list, right_ports: list):
         for idx_r, p_r in enumerate(right_ports):
             if idx_r in used_right:
                 continue
-            if solver(p_l.getParameter(), p_r.getParameter()):
+            vaild, constraints = solver(p_l.getParameter(), p_r.getParameter())
+            if not vaild:
+                pass 
+            elif sp.And(*constraints):
                 matched.append([p_l, p_r])
                 used_left.add(idx_l)
                 used_right.add(idx_r)
@@ -255,12 +263,15 @@ def valueDomainPortMatch(value_domain_groups: dict):
     return results
 
 # example use
-L1 = Port("L1", "Analog", Analog({"name": "v", "min": 3, "max": 6, "type": "Provide"}))
-L2 = Port("L2", "Analog", Analog(v={"name": "v", "min": 2, "max": 3, "type": "Assumption"}, r={"name": "r", "min": 50, "max": 50, "type": "Provide"}))
+L1 = Port("L1", "Analog", Analog(v={"name": "v", "min": 1.62, "max": 3.6, "type": "Provide"}, 
+                                 i={"name": "i", "min": -0.0001, "max": 0.0001, "type": "Assumption"}))
+# L2 = Port("L2", "Analog", Analog(v={"name": "v", "min": 2, "max": 3, "type": "Assumption"}, r={"name": "r", "min": 50, "max": 50, "type": "Provide"}))
 # L3 = Port("L3", "Digit", [0.5], [0.5, 1.0])
-left_ports = [L1, L2]
+left_ports = [L1]
+# left_ports = [L1, L2]
 
-R1 = Port("R1", "Analog", Analog({"name": "v", "min": 1, "max": 6, "type": "Provide"}))
+R1 = Port("R1", "Analog", Analog(p={"name": "p", "min": 0, "max": 2, "type": "Assumption"},
+                                 r={"name": "r", "min": 4, "max": 4, "type": "Provide"}))
 # R2 = Port("R3", "Digit", [0.5], [0.5])
 right_ports = [R1]
 
