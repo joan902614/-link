@@ -1,6 +1,15 @@
 # examle
 # value domain in example is str but actually class
-import sympy as sp
+# import sympy as sp
+import z3
+
+INF = 1e10
+NEG_INF = -1e10
+
+analog_parameter = {'p': z3.Real('p'), 'i': z3.Real('i'), 'v': z3.Real('v'), 'r': z3.Real('r')}
+ValueDomainParameter = {
+    "Analog": analog_parameter
+}
 
 class Port:
     def __init__(self, name, value_domain, parameter):
@@ -18,16 +27,16 @@ class Port:
         return self.name
 
 class Parameter:
-    def __init__(self, name, min, max, type):
+    def __init__(self, name, min, max, type, value_domain):
         self._name = name
         self._type = type
         self._min = min
         self._max = max
-        self._constraint = self.setConstraint(min, max)
+        self._constraint = self.setConstraint(min, max, value_domain)
     
-    def setConstraint(self, min, max):
-        var = sp.symbols(self._name)
-        return sp.And(min <= var, var <= max)
+    def setConstraint(self, min, max, value_domain):
+        para = ValueDomainParameter[value_domain]
+        return [min <= para[self._name], para[self._name] <= max]
     
     def getMin(self):
         return self._min
@@ -41,16 +50,16 @@ class Parameter:
     def getConstraint(self):
         return self._constraint
 
-class Analog:
+class Analog():
     def __init__(self,
-                 v={"name": "v", "min": float('-inf'), "max": float('inf'), "type": "None"}, 
-                 i={"name": "i", "min": float('-inf'), "max": float('inf'), "type": "None"}, 
-                 p={"name": "p", "min": float('-inf'), "max": float('inf'), "type": "None"}, 
-                 r={"name": "r", "min": float('-inf'), "max": float('inf'), "type": "None"}):
-        self._v = Parameter(v["name"], v["min"], v["max"], v["type"])
-        self._i = Parameter(i["name"], i["min"], i["max"], i["type"])
-        self._p = Parameter(p["name"], p["min"], p["max"], p["type"])
-        self._r = Parameter(r["name"], r["min"], r["max"], r["type"])
+                 v={"name": "v", "min": INF, "max": NEG_INF, "type": "None"}, 
+                 i={"name": "i", "min": INF, "max": NEG_INF, "type": "None"}, 
+                 p={"name": "p", "min": INF, "max": NEG_INF, "type": "None"}, 
+                 r={"name": "r", "min": INF, "max": NEG_INF, "type": "None"}):
+        self._v = Parameter(v["name"], v["min"], v["max"], v["type"], "Analog")
+        self._i = Parameter(i["name"], i["min"], i["max"], i["type"], "Analog")
+        self._p = Parameter(p["name"], p["min"], p["max"], p["type"], "Analog")
+        self._r = Parameter(r["name"], r["min"], r["max"], r["type"], "Analog")
     
     def getParameter(self):
         return {"v": self._v, "i": self._i, "p": self._p, "r": self._r}
@@ -113,6 +122,7 @@ def analogSolver(left_port_parameter: dict, right_port_parameter: dict):
     constraint_set = {}
     constraints = []
     
+    # combine constraint
     for k, v in left_port_parameter.items():
         if v.getType() == "Assumption":
             if right_port_parameter[k].getType() == "Assumption":
@@ -123,10 +133,10 @@ def analogSolver(left_port_parameter: dict, right_port_parameter: dict):
                     return False, None
                 else:
                     constraint_set[v] = constraint
-                    constraints.append(constraint)
+                    constraints.extend(constraint)
             elif right_port_parameter[k].getType() == "None":
                 constraint_set[v] = v.getConstraint()
-                constraints.append(v.getConstraint())
+                constraints.extend(v.getConstraint())
         elif v.getType() == "Provide":
             if right_port_parameter[k].getType() == "Assumption":
                 res, constraint = APsolver(right_port_parameter[k], v)
@@ -134,55 +144,55 @@ def analogSolver(left_port_parameter: dict, right_port_parameter: dict):
                     return False, None
                 else:
                     constraint_set[v] = constraint
-                    constraints.append(constraint)
+                    constraints.extend(constraint)
             elif right_port_parameter[k].getType() == "Provide":
                 return False, None
             elif right_port_parameter[k].getType() == "None":
                 constraint_set[v] = v.getConstraint()
-                constraints.append(v.getConstraint())
+                constraints.extend(v.getConstraint())
         elif v.getType() == "None":
             if right_port_parameter[k].getType() == "Assumption":
                 constraint_set[v] = right_port_parameter[k].getConstraint()
-                constraints.append(right_port_parameter[k].getConstraint())
+                constraints.extend(right_port_parameter[k].getConstraint())
             elif right_port_parameter[k].getType() == "Provide":
                 constraint_set[v] = right_port_parameter[k].getConstraint()
-                constraints.append(right_port_parameter[k].getConstraint())
+                constraints.extend(right_port_parameter[k].getConstraint())
             elif right_port_parameter[k].getType() == "None":
                 pass
     
-    v, i, r, p = sp.symbols("v i r p")
-    vars = [v, i, r, p]
-    eqs = [sp.Eq(v, i * r), sp.Eq(p, i * v)]
+    # math solver
+    solver = z3.Solver()
     
-    sol_eqs = sp.solve(eqs, vars, dict=True)[0]
-    
-    res = []
-    for ineq in constraints:
-        simplified_ineq = sp.simplify(ineq.subs(sol_eqs)) 
-        print(simplified_ineq)
-        res.append(simplified_ineq)
-    # prev_constraints = constraints.copy()
-    # new_constraints = []
-    # while True:
-    #     for ineq in prev_constraints:
-    #         simplified_ineq = sp.simplify(ineq.subs(sol_eqs)) 
-    #         new_constraints.append(simplified_ineq)
-
-    #     if new_constraints == prev_constraints:
-    #         break
-    #     else:
-    #         prev_constraints.clear()
-    #         prev_constraints = new_constraints.copy()  
-    #         new_constraints.clear()
-            
-    print(res)
-    if not res:
-        return False, res
+    equtions = [analog_parameter["v"]== analog_parameter["i"] * analog_parameter["r"],
+                analog_parameter["p"]== analog_parameter["i"] * analog_parameter["v"]]
+    for e in equtions:
+        solver.add(e)
+    for c in constraints:
+        solver.add(c)
+    result = solver.check()
+    if result == z3.sat:
+        return True, constraints
     else:
-        return True, res
+        return False, None
+    # v, i, r, p = sp.symbols("v i r p")
+    # vars = [v, i, r, p]
+    # eqs = [sp.Eq(v, i * r), sp.Eq(p, i * v)]
+    
+    # sol_eqs = sp.solve(eqs, vars, dict=True)[0]
+    # print(sol_eqs)
+    # res = []
+    # for ineq in constraints:
+    #     simplified_ineq = sp.simplify(ineq.subs(sol_eqs)) 
+    #     print(simplified_ineq)
+    #     res.append(simplified_ineq)
+    
+    # # result = sp.reduce_inequalities(res, [v, r])
 
-    
-    
+    # if not res:
+    #     return False, res
+    # else:
+    #     return True, res
+            
 
 def digitSolver(assumptions: list, provides: list):
     # ex
@@ -214,9 +224,7 @@ def portMatch(value_domain, left_ports: list, right_ports: list):
             if idx_r in used_right:
                 continue
             vaild, constraints = solver(p_l.getParameter(), p_r.getParameter())
-            if not vaild:
-                pass 
-            elif sp.And(*constraints):
+            if vaild:
                 matched.append([p_l, p_r])
                 used_left.add(idx_l)
                 used_right.add(idx_r)
