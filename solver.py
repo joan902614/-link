@@ -27,7 +27,7 @@ class Parameter:
     
     def setConstraint(self, min, max):
         var = sp.symbols(self._name)
-        return sp.And(min <= var, var <= max)
+        return [min <= var, var <= max]
     
     def getMin(self):
         return self._min
@@ -123,10 +123,10 @@ def analogSolver(left_port_parameter: dict, right_port_parameter: dict):
                     return False, None
                 else:
                     constraint_set[v] = constraint
-                    constraints.append(constraint)
+                    constraints.extend(constraint)
             elif right_port_parameter[k].getType() == "None":
                 constraint_set[v] = v.getConstraint()
-                constraints.append(v.getConstraint())
+                constraints.extend(v.getConstraint())
         elif v.getType() == "Provide":
             if right_port_parameter[k].getType() == "Assumption":
                 res, constraint = APsolver(right_port_parameter[k], v)
@@ -134,19 +134,19 @@ def analogSolver(left_port_parameter: dict, right_port_parameter: dict):
                     return False, None
                 else:
                     constraint_set[v] = constraint
-                    constraints.append(constraint)
+                    constraints.extend(constraint)
             elif right_port_parameter[k].getType() == "Provide":
                 return False, None
             elif right_port_parameter[k].getType() == "None":
                 constraint_set[v] = v.getConstraint()
-                constraints.append(v.getConstraint())
+                constraints.extend(v.getConstraint())
         elif v.getType() == "None":
             if right_port_parameter[k].getType() == "Assumption":
                 constraint_set[v] = right_port_parameter[k].getConstraint()
-                constraints.append(right_port_parameter[k].getConstraint())
+                constraints.extend(right_port_parameter[k].getConstraint())
             elif right_port_parameter[k].getType() == "Provide":
                 constraint_set[v] = right_port_parameter[k].getConstraint()
-                constraints.append(right_port_parameter[k].getConstraint())
+                constraints.extend(right_port_parameter[k].getConstraint())
             elif right_port_parameter[k].getType() == "None":
                 pass
     
@@ -271,7 +271,7 @@ left_ports = [L1]
 # left_ports = [L1, L2]
 
 R1 = Port("R1", "Analog", Analog(p={"name": "p", "min": 0, "max": 2, "type": "Assumption"},
-                                 r={"name": "r", "min": 4, "max": 4, "type": "Provide"}))
+                                 r={"name": "r", "min": 4, "max": 5, "type": "Provide"}))
 # R2 = Port("R3", "Digit", [0.5], [0.5])
 right_ports = [R1]
 
