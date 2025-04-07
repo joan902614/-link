@@ -270,6 +270,10 @@ def valueDomainPortMatch(value_domain_groups: dict):
     
     return results
 
+def config
+
+
+
 # example use
 L1 = Port("L1", "Analog", Analog(v={"name": "v", "min": 1.62, "max": 3.6, "type": "Provide"}, 
                                  i={"name": "i", "min": -0.0001, "max": 0.0001, "type": "Assumption"}))
@@ -279,7 +283,7 @@ left_ports = [L1]
 # left_ports = [L1, L2]
 
 R1 = Port("R1", "Analog", Analog(p={"name": "p", "min": 0, "max": 2, "type": "Assumption"},
-                                 r={"name": "r", "min": 4, "max": 4, "type": "Provide"}))
+                                 r={"name": "r", "min": 40000, "max": 40000, "type": "Provide"}))
 # R2 = Port("R3", "Digit", [0.5], [0.5])
 right_ports = [R1]
 
