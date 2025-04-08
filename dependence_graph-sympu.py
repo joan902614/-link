@@ -1,15 +1,15 @@
 # 公式存放都先用 string
-from sympy import symbols, Eq, solve, Interval, And, Symbol, solveset, S, sympify
+from sympy import symbols, Eq, solve, Interval, And, Symbol, solveset, sympify
 from itertools import product
 
-# === Parameter Node class ===
+# === Parameter Node Class ===
 class ParameterNode:
     def __init__(self, parameter):
         self.parameter = parameter  # str
         self.relations = []         # list of Equation
-        self.constraints = []       # list of Ineqution（白色節點約束）
-        self.can_self_config = None # bool，若為 True，表示該節點可 config（綠色節點）
-        self.configs = []           # list of Ineqution，儲存該綠色節點所有候選 config 範圍
+        self.constraints = []       # list of Inequation
+        self.can_self_config = None # bool
+        self.configs = []           # list of Ineqution
 
     def setPortTypeNotConnected(self, constraint):
         self.can_self_config = True
@@ -34,7 +34,7 @@ class ParameterNode:
     def get_can_self_config(self):
         return self.can_self_config
 
-# === single math formula class ===
+# === Single Math Formula Class ===
 class Math:
     def __init__(self, expression_strs=None):
         self._expression_strs = expression_strs or []  # list of str
@@ -57,10 +57,10 @@ class Equation(Math):
         self.inputs = inputs    # list of str
         super().__init__([expression_str])
 
-# === parameter dependence graph ===
+# === Parameter Dependence Graph ===
 class ParameterGraph:
     def __init__(self):
-        self.nodes = {}  # key: parameter name, value: ParameterNode
+        self.nodes = {}  # dict -> key: str(parameter name), value: ParameterNode
 
     def add_equation(self, eq: Equation):
         # rhs
@@ -97,7 +97,11 @@ class ParameterGraph:
 
 def generate_equations_from_sympy(base_eq):
     """
-    利用 sympy 生成公式
+    base_eq: sympy Eq
+
+    use sympy to generate every parameter direction equation 
+    
+    return: list of equations
     """
     all_vars = list(base_eq.free_symbols)
     results = []
@@ -112,11 +116,11 @@ def generate_equations_from_sympy(base_eq):
 # === 依賴探索器 ===
 class DependencyExplorer:
     def __init__(self, graph: ParameterGraph):
-        self.graph = graph
-        self.used_math = []    # 收集所有白色節點公式與約束
-        self.used_config = []  # 收集所有可 config 節點的名稱
-        self.used_para = set()
-        self.can_config = True
+        self.graph = graph      # ParameterGraph
+        self.used_math = []     # list of Equation
+        self.used_config = []   # list of str(parameter name)
+        self.used_para = set()  # set of str(parameter name)
+        self.can_config = True  # bool(this path can do config)
 
     def explore(self, start_param):
         self.used_math = []
@@ -131,12 +135,10 @@ class DependencyExplorer:
         print(f"🔍 Visiting: {param}")
         self.used_para.add(param)
         
-        # 若該節點可自配置，記錄名稱（不立即處理 config）
         if self.graph.nodes[param].get_can_self_config():
             if param not in self.used_config:
                 self.used_config.append(param)
        
-        # 收集該節點的公式
         equations = self.graph.get_para_equations(param)
         for eq in equations:
             if eq not in self.used_math:
@@ -231,7 +233,6 @@ class DependencyExplorer:
 #             print("這組 config 沒有符合條件的解")
 #     return valid_solutions
 from z3 import Real, Optimize, sat
-from sympy import sympify
 
 def select_config(target_var: str, guarantee: Inequation, used_math, used_config: dict):
     """
@@ -420,8 +421,6 @@ def print_dot_graph_parameter_graph(graph: ParameterGraph, highlight_math=[]):
                 seen_ineq_edges.add(edge_key)
                 print(f'  "{constraint_node_name}" -> "{ineq.name}" [color="gray", style="dashed"];')
 
-
-
     print("}")
     print("--- End ---\n")
 
@@ -431,7 +430,6 @@ def print_dot_graph_parameter_graph(graph: ParameterGraph, highlight_math=[]):
 graph = ParameterGraph()
 
 # test: 加入簡單等式 a = b 與 a 的約束 (白色節點)
-from sympy import symbols, Eq
 a, b = symbols("a b")
 for eq in generate_equations_from_sympy(Eq(a, b)):
     graph.add_equation(eq)
@@ -482,7 +480,7 @@ for math in used_math:
             print(f" - 【約束】{expr}")
 
 # 印出 DOT 圖
-print_dot_graph_parameter_graph(graph, highlight_math=used_math)
+print_dot_graph_parameter_graph(graph, used_math)
 
 # === 新增部分：根據所有公式和可 config 節點候選範圍，找出能讓 vin_dac 落在目標區間 (3.5, 4.1) 的組合 ===
 target_range = Inequation("pin_speaker", ["0.0125 <= pin_speaker", "pin_speaker <= 0.05"])
